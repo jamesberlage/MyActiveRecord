@@ -30,7 +30,7 @@ human = Human.find(1)
 p human
 
 cat = Cat.find(1)
-p cat
+p Cat.assoc_params
 p cat.human
 
 human = Human.find(1)

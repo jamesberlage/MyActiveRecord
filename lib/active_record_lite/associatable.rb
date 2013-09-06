@@ -48,6 +48,7 @@ end
 
 module Associatable
   def assoc_params
+    @assoc_params ||= {}
   end
 
   def belongs_to(name, params = {})
@@ -58,6 +59,8 @@ module Associatable
       results = DBConnection.execute("SELECT * FROM #{aps.other_table} WHERE #{aps.primary_key} = ?", foreign_key_value)
       aps.other_class.parse_all(results).first
     end
+
+    assoc_params[name] = BelongsToAssocParams.new(name, params)
   end
 
   def has_many(name, params = {})
@@ -65,13 +68,31 @@ module Associatable
       aps = HasManyAssocParams.new(name, params)
       primary_key_value = self.send(aps.primary_key)
 
-      p "aps.class_name = #{aps.class_name}"
-
       results = DBConnection.execute("SELECT * FROM #{aps.other_table} WHERE #{aps.foreign_key} = ?", primary_key_value)
       aps.other_class.parse_all(results)
     end
   end
 
   def has_one_through(name, assoc1, assoc2)
+    define_method(name) do
+      assoc1params = self.class.assoc_params[assoc1]
+      assoc2params = assoc1.to_s.constantize.class.assoc_params[assoc2]
+
+      foreign_key_value = self.send(assoc1params.primary_key)
+
+      results = DBConnection.execute(<<-SQL, foreign_key_value)
+        SELECT
+          *
+        FROM
+          #{assoc2params.other_table}
+        JOIN
+          #{assoc1params.other_table}
+        ON
+          assoc2params.primary_id = assoc1params.foreign_key_id
+        WHERE
+          assoc1params.primary_id = ?
+      SQL
+      assoc2.other_class.parse_all(results).first
+    end
   end
 end
