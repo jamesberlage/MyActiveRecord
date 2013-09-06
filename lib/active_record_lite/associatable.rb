@@ -34,8 +34,10 @@ class BelongsToAssocParams < AssocParams
 end
 
 class HasManyAssocParams < AssocParams
-  def initialize(name, params, self_class)
-    @class_name = params.include?(:class_name) ? params[:class_name].to_s : underscore_to_camelcase(name.to_s.chomp)
+  attr_accessor :class_name, :foreign_key, :primary_key
+
+  def initialize(name, params)#, self_class)
+    @class_name = params.include?(:class_name) ? params[:class_name].to_s[0..-2] : underscore_to_camelcase(name.to_s)[0..-2]
     @foreign_key = params.include?(:foreign_key) ? params[:foreign_key].to_s : add_underscored_words(name.to_s, "id")
     @primary_key = params.include?(:primary_key) ? params[:primary_key].to_s : "id"
   end
@@ -62,6 +64,8 @@ module Associatable
     define_method(name) do
       aps = HasManyAssocParams.new(name, params)
       primary_key_value = self.send(aps.primary_key)
+
+      p "aps.class_name = #{aps.class_name}"
 
       results = DBConnection.execute("SELECT * FROM #{aps.other_table} WHERE #{aps.foreign_key} = ?", primary_key_value)
       aps.other_class.parse_all(results)
