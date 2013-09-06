@@ -26,11 +26,8 @@ class House < SQLObject
   my_attr_accessible(:id, :address, :house_id)
 end
 
-human = Human.find(1)
-p human
-
 cat = Cat.find(1)
-p Cat.assoc_params
+p cat
 p cat.human
 
 human = Human.find(1)

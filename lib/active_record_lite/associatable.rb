@@ -76,23 +76,23 @@ module Associatable
   def has_one_through(name, assoc1, assoc2)
     define_method(name) do
       assoc1params = self.class.assoc_params[assoc1]
-      assoc2params = assoc1.to_s.constantize.class.assoc_params[assoc2]
+      assoc2params = assoc1.to_s.capitalize.constantize.assoc_params[assoc2]
 
       foreign_key_value = self.send(assoc1params.primary_key)
 
       results = DBConnection.execute(<<-SQL, foreign_key_value)
         SELECT
-          *
+          assoc2.*
         FROM
-          #{assoc2params.other_table}
+          #{assoc2params.other_table} AS assoc2
         JOIN
-          #{assoc1params.other_table}
+          #{assoc1params.other_table} AS assoc1
         ON
-          assoc2params.primary_id = assoc1params.foreign_key_id
+          assoc2.#{assoc2params.primary_key} = assoc1.#{assoc2params.foreign_key}
         WHERE
-          assoc1params.primary_id = ?
+          assoc1.#{assoc1params.primary_key} = ?
       SQL
-      assoc2.other_class.parse_all(results).first
+      assoc2params.other_class.parse_all(results).first
     end
   end
 end
